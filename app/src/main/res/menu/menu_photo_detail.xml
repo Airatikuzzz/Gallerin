@@ -1,12 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-      xmlns:app="http://schemas.android.com/apk/res-auto">
+      xmlns:app="http://schemas.android.com/apk/res-auto"
+    >
     <item android:id="@+id/menu_share"
-          android:title="@string/download"
+          android:title="@string/share"
           android:icon="@drawable/ic_share"
-          app:showAsAction="ifRoom"/>
+          app:showAsAction="ifRoom"
+        android:visible="false"/>
     <item android:id="@+id/menu_download_file"
           android:title="@string/download"
-          android:icon="@drawable/ic_file_download"
+          android:icon="@drawable/ic_download"
           app:showAsAction="ifRoom"/>
+    <item android:visible="false"
+        android:id="@+id/menu_done"
+        android:icon="@drawable/ic_done"
+        app:showAsAction="ifRoom">
+    </item>
+    <item android:id="@+id/menu_set_wallpaper"
+          android:title="@string/set_wallpaper"
+          app:showAsAction="ifRoom"
+          android:visible="false"/>
 </menu>

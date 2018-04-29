@@ -13,6 +13,11 @@ public class GalleryItem {
     private String mCaption;
     @SerializedName("id")
     private String mId;
+
+    public String getId() {
+        return mId;
+    }
+
     @SerializedName("url_s")
     private String mUrl;
     @SerializedName("owner")

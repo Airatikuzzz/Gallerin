@@ -303,7 +303,8 @@ public class SearchFragment extends Fragment {
             holder.mImageView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    transition(holder);
+                    Intent i = PhotoDetailActivity.newIntent(getActivity(), Uri.parse(holder.item.getId()));
+                    startActivity(i);
                 }
             });
             item = mGalleryItems.get(position);
@@ -318,19 +319,6 @@ public class SearchFragment extends Fragment {
         @Override
         public int getItemCount() {
             return mGalleryItems.size();
-        }
-
-        private void transition(SearchHolder holder) {
-            Intent i = PhotoDetailActivity.newIntent(getActivity(), Uri.parse(holder.item.getUrlFull()));
-
-            if (Build.VERSION.SDK_INT < 21) {
-                startActivity(i);
-            } else {
-                ActivityOptionsCompat options = ActivityOptionsCompat.
-                        makeSceneTransitionAnimation(getActivity(), holder.mImageView, getString(R.string.transition_test));
-                startActivity(i, options.toBundle());
-                getActivity().getWindow().setExitTransition(null);
-            }
         }
     }
 

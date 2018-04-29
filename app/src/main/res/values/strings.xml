@@ -20,4 +20,6 @@
     <string name="about_app">О приложении</string>
     <string name="gallerin_app">Gallerin App</string>
     <string name="description_dallerin">Photos. New. Beautiful. Rich.</string>
+    <string name="set_wallpaper">Установить как обои</string>
+    <string name="share">Поделиться</string>
 </resources>

@@ -7,7 +7,7 @@ import android.preference.PreferenceManager;
  * Created by maira on 21.07.2017.
  */
 
-public class QueryPreferences {
+class QueryPreferences {
     private static final String PREF_QUERY_SEARCH = "searchQuery";
     private static final String PREF_LAST_RESULT_ID = "lastResultId";
     private static final String PREF_IS_ALARM_ON = "isAlarmOn";

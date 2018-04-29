@@ -14,7 +14,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.airatikuzzz.gallerin.IntegerEvent;
-import com.airatikuzzz.gallerin.Method;
 import com.airatikuzzz.gallerin.R;
 import com.kc.unsplash.api.Order;
 
@@ -33,13 +32,12 @@ public class DataFragment extends Fragment {
 
 
     private TabLayout tabLayout;
-    private ViewPager viewPager;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.tabs, container, false);
-        viewPager = v.findViewById(R.id.viewpager);
+        ViewPager viewPager = v.findViewById(R.id.viewpager);
         setupViewPager(viewPager);
 
         tabLayout = v.findViewById(R.id.tabs);
@@ -67,11 +65,11 @@ public class DataFragment extends Fragment {
     private void setupViewPager(ViewPager viewPager) {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getChildFragmentManager());
         adapter.addFragment(new CategoriesFragment(), "Категории");
-        adapter.addFragment(PhotoGalleryFragment.newInstance(Order.POPULAR, Method.LIST_PHOTOS), "Популярное");
+        adapter.addFragment(PhotoGalleryFragment.newInstance(Order.POPULAR), "Популярное");
         adapter.addFragment(
-                PhotoGalleryFragment.newInstance(Order.LATEST, Method.LIST_PHOTOS), "Новые");
+                PhotoGalleryFragment.newInstance(Order.LATEST), "Новые");
         adapter.addFragment(
-                PhotoGalleryFragment.newInstance(Order.OLDEST, Method.LIST_PHOTOS), "Старые");
+                PhotoGalleryFragment.newInstance(Order.OLDEST), "Старые");
         viewPager.setAdapter(adapter);
     }
 

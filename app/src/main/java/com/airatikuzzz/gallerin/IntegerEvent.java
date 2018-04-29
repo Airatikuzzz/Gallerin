@@ -5,7 +5,7 @@ package com.airatikuzzz.gallerin;
  */
 
 public class IntegerEvent {
-    private int value;
+    private final int value;
 
     public int getValue() {
         return value;

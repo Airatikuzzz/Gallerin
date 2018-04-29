@@ -22,7 +22,7 @@
             android:title="@string/find"/>
     </group>
 
-    <item android:title="Communicate">
+    <item android:title="@string/communicate">
         <menu>
             <item
                 android:id="@+id/nav_share"
@@ -33,9 +33,8 @@
                 android:icon="@drawable/ic_menu_send"
                 android:title="@string/send_to_friends"/>
             <item
-                android:id="@+id/nav_about"
                 android:icon="@drawable/ic_menu_share"
-                android:title="О приложении"/>
+                android:title="@string/about_app"/>
 
         </menu>
     </item>

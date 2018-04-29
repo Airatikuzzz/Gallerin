@@ -16,13 +16,11 @@ import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.util.LruCache;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -31,17 +29,13 @@ import android.widget.Toast;
 
 import com.airatikuzzz.gallerin.EndlessRecyclerOnScrollListener;
 import com.airatikuzzz.gallerin.GalleryItem;
-import com.airatikuzzz.gallerin.Method;
 import com.airatikuzzz.gallerin.activities.PhotoDetailActivity;
-import com.airatikuzzz.gallerin.QueryPreferences;
 import com.airatikuzzz.gallerin.R;
-import com.airatikuzzz.gallerin.activities.SearchActivity;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.kc.unsplash.Unsplash;
 import com.kc.unsplash.api.Order;
 import com.kc.unsplash.models.Photo;
-import com.kc.unsplash.models.SearchResults;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,20 +46,14 @@ import java.util.List;
 
 public class PhotoGalleryFragment extends Fragment {
     private Order order;
-    private Method mMethod;
-    private String mQuery;
 
-
-    public static final int DEFAULT_PAGE_NUMBER = 1;
-    public static final int DEFAULT_CODE = 0;
-    public static final int CODE_REFRESH = 1;
+    private static final int DEFAULT_PAGE_NUMBER = 1;
     private static final String RECYCLER_STATE = "receycler_state_gallerin";
     private static final String TAG = "PhotoGalleryFragment";
     private static final String ARG_ORDER = "PhotoGalleryFragment_arg_order";
-    private static final String ARG_METHOD = "PhotoGalleryFragment_arg_method";
 
-    boolean isRefreshing = false;
-    boolean isInstalledScrollManager = false;
+    private boolean isRefreshing = false;
+    private boolean isInstalledScrollManager = false;
 
     private RecyclerView mRecyclerView;
     private SwipeRefreshLayout swipeLayout;
@@ -75,14 +63,13 @@ public class PhotoGalleryFragment extends Fragment {
     private Parcelable recyclerViewState;
     private PhotoGalleryAdapter mAdapter;
     private List<GalleryItem> mItems = new ArrayList<>();
-    public static LruCache<String, Bitmap> mMemoryCache;
-    Unsplash unsplash;
 
-    public static PhotoGalleryFragment newInstance(Order order_, Method method){
+    private Unsplash unsplash;
+
+    public static PhotoGalleryFragment newInstance(Order order_){
         PhotoGalleryFragment fragment = new PhotoGalleryFragment();
         Bundle args = new Bundle();
         args.putString(ARG_ORDER, order_.getOrder());
-        args.putString(ARG_METHOD, method.getValue());
         fragment.setArguments(args);
         return fragment;
     }
@@ -95,54 +82,20 @@ public class PhotoGalleryFragment extends Fragment {
         setHasOptionsMenu(true);
 
         order = Order.valueOf(getArguments().getString(ARG_ORDER).toUpperCase());
-        mMethod = Method.valueOf(getArguments().getString(ARG_METHOD));
 
         if(savedInstanceState!=null)        //Возвращает TRUE при смене ориентации
             recyclerViewState = savedInstanceState.getParcelable(RECYCLER_STATE);
 
         unsplash = new Unsplash("ebe8195594bd221b1c86bb55d0224f1c439b41d0aa4d3736ba7bda6e57dcfde5");
 
-        if(mMethod.equals(Method.LIST_PHOTOS)) loadData(DEFAULT_PAGE_NUMBER);
+        loadData(DEFAULT_PAGE_NUMBER);
     }
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
         inflater.inflate(R.menu.fragment_photo_galleryy, menu);
-
-        /*final MenuItem searchItem = (MenuItem) menu.findItem(R.id.menu_search_item);
-        final SearchView searchView = (SearchView) searchItem.getActionView();
-
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                Log.d(TAG, "query is "+ query);
-                loadData(DEFAULT_PAGE_NUMBER, query);
-                searchView.setVisibility(View.INVISIBLE);
-                searchView.setVisibility(View.VISIBLE);
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                Log.d(TAG, " text changed "+newText);
-                return false;
-            }
-        });
-        searchView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(getActivity(), SearchActivity.class));
-            }
-        });*/
     }
-
-
-    private void updateItems() {
-        String query = QueryPreferences.getStoredQuery(getActivity());
-        Log.d(TAG, "in updateitems taken query = " + query);
-    }
-
 
     @Override
     public void onDestroy() {
@@ -161,13 +114,12 @@ public class PhotoGalleryFragment extends Fragment {
         setupAdapter();
         swipeLayout = v.findViewById(R.id.swipeContainer);
 
-
         swipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
                 isRefreshing = true;
                 EndlessRecyclerOnScrollListener.setCurrent_page(0);
-                scrollListener.setPreviousTotal(0);
+                scrollListener.setPreviousTotal();
                 refresh();
             }
         });
@@ -184,9 +136,7 @@ public class PhotoGalleryFragment extends Fragment {
         float densityDpi = getResources().getDisplayMetrics().densityDpi;
         float displayWidth = getResources().getDisplayMetrics().widthPixels;
         float widthInDP = displayWidth/(densityDpi/160.0f);
-        Log.d(TAG, " widthindp"+widthInDP);
-        int spanCount = (int)widthInDP/150;
-        return spanCount;
+        return (int)widthInDP/150;
     }
 
     private void onDataLoaded(){
@@ -218,7 +168,6 @@ public class PhotoGalleryFragment extends Fragment {
         scrollListener = new EndlessRecyclerOnScrollListener(mGridLayoutManager) {
             @Override
             public void onLoadMore(int current_page) {
-                Log.d("spl", "scrolling current page " + current_page);
                 if (isRefreshing) {
                     return;
                 }
@@ -229,14 +178,11 @@ public class PhotoGalleryFragment extends Fragment {
     }
 
     private void setupAdapter() {
-        Log.d("kek", "in setup "+ mItems.size());
         if(mItems.size() == 0){                                 //Установка адаптера с прогрессбаром при начальной загрузке
             mRecyclerView.setAdapter(new LoadingAdapter());
-            Log.d("kek", "load adapter inst");
         }
         else{
             if(mAdapter==null){                                 //Загрузка данных произошла
-                Log.d("kek", "gallery adapter inst");
                 mAdapter = new PhotoGalleryAdapter(mItems);     //Передача данных адаптеру
                 mRecyclerView.setAdapter(mAdapter);             //Установка адаптера
                 return;
@@ -263,9 +209,6 @@ public class PhotoGalleryFragment extends Fragment {
     private void loadData(int page){
         loadListPhotos(page);
     }
-    private void loadData(int page, String query){
-        searchPhotos(page, query);
-    }
 
     private void loadListPhotos(int page){
         unsplash.getPhotos(page, 16, order, new Unsplash.OnPhotosLoadedListener() {
@@ -285,32 +228,9 @@ public class PhotoGalleryFragment extends Fragment {
                 try {
                     Toast.makeText(getActivity(), "Невозможно загрузить данные. Проверьте подключение к интернету", Toast.LENGTH_LONG).show();
                 }
-                catch (NullPointerException n){
+                catch (NullPointerException n){   //Не могу объясниь такое явление, но оно было однажды.
                     Toast.makeText(getActivity(), "Произошла ошибка. Попробуйте перезайти в приложение.", Toast.LENGTH_LONG).show();
                 }
-            }
-        });
-    }
-
-    private void searchPhotos(int page, String query){
-        unsplash.searchPhotos(query, page, 16, new Unsplash.OnSearchCompleteListener() {
-            @Override
-            public void onComplete(SearchResults results) {
-                Log.d("Photos", "Total Results Found " + results.getTotal());
-                List<Photo> photos = results.getResults();
-                mItems = convert(photos);
-                onDataLoaded();
-                if (!swipeLayout.isRefreshing()) {
-                    return;
-                }
-                swipeLayout.setRefreshing(false);
-                isRefreshing = false;
-            }
-
-            @Override
-            public void onError(String error) {
-                Log.d("Unsplash", error);
-                Toast.makeText(getActivity(), "Невозможно загрузить данные. Проверьте подключение к интернету", Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -323,7 +243,7 @@ public class PhotoGalleryFragment extends Fragment {
     }
 
     //Конвертирование загруженных объектов в модель GalleryItem
-    public List<GalleryItem> convert(List<Photo> list){
+    private List<GalleryItem> convert(List<Photo> list){
         for(int i = 0;i<list.size();i++){
             GalleryItem item = new GalleryItem();
             item.setCaption(list.get(i).getUser().getName());
@@ -345,15 +265,9 @@ public class PhotoGalleryFragment extends Fragment {
             mImageView = (ImageView) itemView.findViewById(R.id.fragment_photo_gallery_image_view);
 
         }
-
-        public void bindDrawable(Drawable drawable){
-            mImageView.setImageDrawable(drawable);
-        }
-
         public void bindGalleryItem(GalleryItem galleryItem){
             item = galleryItem;
         }
-
 
     }
 

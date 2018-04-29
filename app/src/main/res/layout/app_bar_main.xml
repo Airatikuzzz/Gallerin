@@ -9,5 +9,5 @@
     app:layout_scrollFlags="scroll|enterAlways"
     android:minHeight="?attr/actionBarSize"
     app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-    android:background="?attr/colorPrimary">
+    android:background="@color/colorPrimary">
 </android.support.v7.widget.Toolbar>

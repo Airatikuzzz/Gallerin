@@ -36,16 +36,8 @@ public class GalleryItem {
         mOwner = owner;
     }
 
-    public String getCaption() {
-        return mCaption;
-    }
-
     public void setCaption(String caption) {
         mCaption = caption;
-    }
-
-    public String getId() {
-        return mId;
     }
 
     public void setId(String id) {
@@ -60,13 +52,6 @@ public class GalleryItem {
         mUrl = url;
     }
 
-    public Uri getPhotoPageUri(){
-        return Uri.parse("http://www.flickr.com/photos/")
-                .buildUpon()
-                .appendPath(mOwner)
-                .appendPath(mId)
-                .build();
-    }
     @Override
     public String toString() {
         return mCaption;

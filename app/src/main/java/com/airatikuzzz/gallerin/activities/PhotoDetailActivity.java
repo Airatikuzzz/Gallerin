@@ -30,7 +30,6 @@ import java.io.OutputStream;
 
 public class PhotoDetailActivity extends AppCompatActivity {
 
-    private PhotoView mPhotoView;
     private Uri mUri;
 
     @Override
@@ -43,7 +42,7 @@ public class PhotoDetailActivity extends AppCompatActivity {
         getWindow().setEnterTransition(null);
         final ProgressBar progressBar = findViewById(R.id.load_progress_bar_detail);
 
-        mPhotoView = findViewById(R.id.iv_photo);
+        PhotoView photoView = findViewById(R.id.iv_photo);
         Glide.with(this)
                 .load(mUri)
                 .listener(new RequestListener<Uri, GlideDrawable>() {
@@ -62,7 +61,7 @@ public class PhotoDetailActivity extends AppCompatActivity {
                         return false;
                     }
                 })
-                .into(mPhotoView);
+                .into(photoView);
         Toolbar toolbar = findViewById(R.id.toolbar_detail);
         setSupportActionBar(toolbar);
         getSupportActionBar().setHomeButtonEnabled(true);

@@ -1,19 +1,13 @@
 package com.airatikuzzz.gallerin.activities;
 
+import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
-import android.view.Menu;
-import android.view.MenuItem;
 
-import com.airatikuzzz.gallerin.Method;
 import com.airatikuzzz.gallerin.R;
-import com.airatikuzzz.gallerin.fragments.DataFragment;
-import com.airatikuzzz.gallerin.fragments.PhotoGalleryFragment;
 import com.airatikuzzz.gallerin.fragments.SearchFragment;
-import com.kc.unsplash.api.Order;
 
 public class SearchActivity extends AppCompatActivity {
 

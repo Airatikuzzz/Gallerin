@@ -4,9 +4,9 @@
     <item android:id="@+id/menu_share"
           android:title="@string/download"
           android:icon="@drawable/ic_share"
-          app:showAsAction="always"/>
+          app:showAsAction="ifRoom"/>
     <item android:id="@+id/menu_download_file"
           android:title="@string/download"
           android:icon="@drawable/ic_file_download"
-          app:showAsAction="always"/>
+          app:showAsAction="ifRoom"/>
 </menu>

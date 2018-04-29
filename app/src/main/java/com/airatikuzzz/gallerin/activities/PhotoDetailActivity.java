@@ -70,12 +70,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
         getSupportActionBar().setTitle("");
    }
 
-    @Override
-    public boolean onSupportNavigateUp() {
-        onBackPressed();
-        return true;
-    }
-
     public static Intent newIntent(Context context, Uri uri){
         Intent i = new Intent(context, PhotoDetailActivity.class);
         i.setData(uri);
@@ -105,10 +99,7 @@ public class PhotoDetailActivity extends AppCompatActivity {
                 break;
             case R.id.menu_share:
                 break;
-            case R.id.home:
-                onBackPressed();
-                break;
-            case R.id.homeAsUp:
+            case android.R.id.home:
                 onBackPressed();
                 break;
         }

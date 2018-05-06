@@ -42,7 +42,7 @@ public class DataFragment extends Fragment {
 
         tabLayout = v.findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(viewPager);
-        tabLayout.getTabAt(2).select();
+        tabLayout.getTabAt(1).select();
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
@@ -64,7 +64,6 @@ public class DataFragment extends Fragment {
 
     private void setupViewPager(ViewPager viewPager) {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getChildFragmentManager());
-        adapter.addFragment(new CategoriesFragment(), "Категории");
         adapter.addFragment(PhotoGalleryFragment.newInstance(Order.POPULAR), "Популярное");
         adapter.addFragment(
                 PhotoGalleryFragment.newInstance(Order.LATEST), "Новые");
@@ -118,16 +117,12 @@ public class DataFragment extends Fragment {
     @Subscribe
     public void onEvent(IntegerEvent menuItem){
         int id = menuItem.getValue();
-        Log.d("kek1", "onevent");
         switch(id){
-            case R.id.nav_categories:
+            case R.id.nav_popular:
                 tabLayout.getTabAt(0).select();
                 break;
-            case R.id.nav_popular:
-                tabLayout.getTabAt(1).select();
-                break;
             case R.id.nav_new_photos:
-                tabLayout.getTabAt(2).select();
+                tabLayout.getTabAt(1).select();
                 break;
         }
     }

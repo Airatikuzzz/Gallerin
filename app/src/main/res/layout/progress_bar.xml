@@ -12,4 +12,5 @@
         android:layout_centerVertical="true"
         android:id="@+id/load_progress_bar">
     </ProgressBar>
+
 </RelativeLayout>

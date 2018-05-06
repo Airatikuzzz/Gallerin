@@ -7,20 +7,23 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
+import android.support.design.widget.AppBarLayout;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.util.LruCache;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.airatikuzzz.gallerin.GalleryItem;
 import com.airatikuzzz.gallerin.R;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.GlideDrawable;
@@ -28,59 +31,68 @@ import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.bumptech.glide.request.target.Target;
+import com.github.chrisbanes.photoview.OnPhotoTapListener;
 import com.github.chrisbanes.photoview.PhotoView;
-import com.kc.unsplash.Unsplash;
-import com.kc.unsplash.models.Photo;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class PhotoDetailActivity extends AppCompatActivity {
 
+    private static final String EXTRA_URL = "com.airatikuzzz.gallerin.extra_url_gallerin";
+    private static final String EXTRA_ID = "com.airatikuzzz.gallerin.extra_id_gallerin";
     private static final int PERMISSION_REQUEST_CODE = 123;
     private Bitmap bitmap;
     private Uri mUri;
     private String mId;
     private File currentSavedFile;
-    private MenuItem itemDownload;
     private boolean isSaved;
+    private boolean isVisibleToolbar = true;
 
-    ProgressBar progressBar;
+    private Toolbar toolbar;
+    private ProgressBar progressBar;
     private PhotoView photoView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo_detail);
-        mId = getIntent().getData().toString();
-        Log.d("kek", "uri : " + mId.toString());
+        mId = getIntent().getStringExtra(EXTRA_ID);                 //Достаем переданые данные при создании интента.
+        mUri = Uri.parse(getIntent().getStringExtra(EXTRA_URL));
         isSaved = false;
 
-        getWindow().setEnterTransition(null);
         progressBar = findViewById(R.id.load_progress_bar_detail);
 
-        Unsplash unsplash = new Unsplash("ebe8195594bd221b1c86bb55d0224f1c439b41d0aa4d3736ba7bda6e57dcfde5");
-
-        unsplash.getPhoto(mId, new Unsplash.OnPhotoLoadedListener() {
+        photoView = findViewById(R.id.iv_photo);
+        photoView.setOnPhotoTapListener(new OnPhotoTapListener() {
             @Override
-            public void onComplete(Photo photo) {
-                String photoUrl = photo.getUrls().getRegular();
-                mUri = Uri.parse(photoUrl);
-                loadImage();
-            }
-
-            @Override
-            public void onError(String error) {
-                Log.v("Error", error);
+            public void onPhotoTap(ImageView view, float x, float y) {           //Исчезновение тулбара при нажатии на фото
+                if(isVisibleToolbar) {
+                    toolbar.animate().translationY(-toolbar.getBottom()).setInterpolator(new AccelerateInterpolator()).start();
+                    getSupportActionBar().hide();
+                    isVisibleToolbar = false;
+                }
+                else {
+                    getSupportActionBar().show();
+                    toolbar.animate().translationY(0).setInterpolator(new DecelerateInterpolator()).start();
+                    isVisibleToolbar = true;
+                }
+                toolbar.invalidate();
             }
         });
-        photoView = findViewById(R.id.iv_photo);
 
-        Toolbar toolbar = findViewById(R.id.toolbar_detail);
+        AppBarLayout appBarLayout = findViewById(R.id.app_bar_lay);
+        appBarLayout.setOutlineProvider(null);
+
+        toolbar = findViewById(R.id.toolbar_detail);
         setSupportActionBar(toolbar);
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setTitle("");
+
+        loadImageToPhotoView();
     }
 
     @Override
@@ -89,26 +101,30 @@ public class PhotoDetailActivity extends AppCompatActivity {
         checkExistsInStorage();
     }
 
-    private boolean checkExistsInStorage() {
+    @Override
+    public boolean onSupportNavigateUp() {
+        onBackPressed();
+        return true;
+    }
+
+    //Проверка на наличие фото в диске. Если файл был скачан - достаем с диска.
+    private void checkExistsInStorage() {
         String imageFileName = mId + ".jpg";
         File storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
                 + "/Gallerin");
         File imageFile = new File(storageDir, imageFileName);
-        Log.d("Photos", "check " + imageFile.getAbsolutePath());
 
         if (imageFile.exists()) {
-            Log.d("Photos", "check ok");
             isSaved = true;
             currentSavedFile = imageFile;
             invalidateOptionsMenu();
-            return true;
+            return;
         }
         invalidateOptionsMenu();
-        return false;
     }
 
-
-    private void loadImage() {
+    //Загрузка фото по URI, переданного при создании активити.
+    private void loadImageToPhotoView() {
         Glide.with(this)
                 .load(mUri)
                 .listener(new RequestListener<Uri, GlideDrawable>() {
@@ -130,16 +146,16 @@ public class PhotoDetailActivity extends AppCompatActivity {
                 .into(photoView);
     }
 
-    public static Intent newIntent(Context context, Uri uri) {
+    public static Intent newIntent(Context context, GalleryItem item) {
         Intent i = new Intent(context, PhotoDetailActivity.class);
-        i.setData(uri);
+        i.putExtra(EXTRA_URL, item.getUrlFull());
+        i.putExtra(EXTRA_ID, item.getId());
         return i;
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_photo_detail, menu);
-        itemDownload = menu.findItem(R.id.menu_download_file);
         return true;
     }
 
@@ -147,17 +163,18 @@ public class PhotoDetailActivity extends AppCompatActivity {
     public boolean onPrepareOptionsMenu(Menu menu) {
         super.onPrepareOptionsMenu(menu);
 
+        MenuItem itemDownload = menu.findItem(R.id.menu_download_file);
         MenuItem itemShare = menu.findItem(R.id.menu_share);
-        MenuItem item = menu.findItem(R.id.menu_done);
+        MenuItem itemDone = menu.findItem(R.id.menu_done);
         MenuItem itemSetWallpaper = menu.findItem(R.id.menu_set_wallpaper);
-        if (isSaved) {
+        if (isSaved) {                                    //Изображение загружено - появляются возможности
             itemShare.setVisible(true);
-            item.setVisible(true);
+            itemDone.setVisible(true);
             itemSetWallpaper.setVisible(true);
             itemDownload.setVisible(false);
         } else {
             itemShare.setVisible(false);
-            item.setVisible(false);
+            itemDone.setVisible(false);
             itemDownload.setVisible(true);
             itemSetWallpaper.setVisible(false);
         }
@@ -169,20 +186,7 @@ public class PhotoDetailActivity extends AppCompatActivity {
         int id = item.getItemId();
         switch (id) {
             case R.id.menu_download_file:
-                Glide.with(this)
-                        .load(mUri)
-                        .asBitmap()
-                        .into(new SimpleTarget<Bitmap>() {
-                            @Override
-                            public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
-                                bitmap = resource;
-                                if (hasPermissions()) {
-                                    saveImage(resource);
-                                } else {
-                                    requestPerms();
-                                }
-                            }
-                        });
+                downloadPhoto();
                 break;
             case R.id.menu_share:
                 sharePhoto();
@@ -196,9 +200,26 @@ public class PhotoDetailActivity extends AppCompatActivity {
             case R.id.menu_done:
                 Toast.makeText(this, "Изображение уже загружено", Toast.LENGTH_SHORT).show();
                 break;
-
         }
         return true;
+    }
+
+    //Скачивание фото в диск
+    private void downloadPhoto() {
+        Glide.with(this)
+                .load(mUri)
+                .asBitmap()
+                .into(new SimpleTarget<Bitmap>() {
+                    @Override
+                    public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
+                        bitmap = resource;
+                        if (hasPermissions()) {
+                            saveImage(resource);
+                        } else {
+                            requestPerms();
+                        }
+                    }
+                });
     }
 
     private void sharePhoto() {
@@ -213,12 +234,18 @@ public class PhotoDetailActivity extends AppCompatActivity {
         Uri contentUri = Uri.fromFile(currentSavedFile);
         Intent setAs = new Intent(Intent.ACTION_ATTACH_DATA);
         setAs.setDataAndType(contentUri, "image/*");
-        startActivity(Intent.createChooser(setAs, "Select"));
+        startActivity(Intent.createChooser(setAs, "Set as"));
+    }
+
+    private void galleryAddPic(String imagePath) {
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        File f = new File(imagePath);
+        Uri contentUri = Uri.fromFile(f);
+        mediaScanIntent.setData(contentUri);
+        sendBroadcast(mediaScanIntent);
     }
 
     private void saveImage(Bitmap image) {
-        String savedImagePath = null;
-
         String imageFileName = mId + ".jpg";
         File storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
                 + "/Gallerin");
@@ -229,20 +256,23 @@ public class PhotoDetailActivity extends AppCompatActivity {
         if (success) {
             File imageFile = new File(storageDir, imageFileName);
 
-            savedImagePath = imageFile.getAbsolutePath();
             try {
                 FileOutputStream fOut = new FileOutputStream(imageFile);
                 image.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
                 fOut.flush();
                 fOut.close();
-            } catch (Exception e) {
+            } catch (SecurityException e) {
                 e.printStackTrace();
                 Toast.makeText(this, "Произошла ошибка. Изображение не сохранено. Нет разрешения на запись на диск", Toast.LENGTH_SHORT).show();
                 return;
+            } catch (FileNotFoundException e) {
+                Toast.makeText(this, "Произошла ошибка. Изображение не сохранено.", Toast.LENGTH_SHORT).show();
+                return;
+            } catch (IOException e) {
+                Toast.makeText(this, "Произошла ошибка. Изображение не сохранено. Нет разрешения на запись на диск", Toast.LENGTH_SHORT).show();
+                return;
             }
-
-            // Add the image to the system gallery
-            galleryAddPic(savedImagePath);
+            galleryAddPic(imageFile.getAbsolutePath());
             Toast.makeText(this, "Изображение загружено", Toast.LENGTH_SHORT).show();
             isSaved = true;
             currentSavedFile = imageFile;
@@ -250,21 +280,9 @@ public class PhotoDetailActivity extends AppCompatActivity {
         }
     }
 
-    private void galleryAddPic(String imagePath) {
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        File f = new File(imagePath);
-
-        Uri contentUri = Uri.fromFile(f);
-        mediaScanIntent.setData(contentUri);
-        sendBroadcast(mediaScanIntent);
-    }
-
     private boolean hasPermissions() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED) {
-            return true;
-        }
-        return false;
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED;
     }
 
     private void requestPerms() {
@@ -277,7 +295,6 @@ public class PhotoDetailActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         boolean allowed = true;
-
         switch (requestCode) {
             case PERMISSION_REQUEST_CODE:
                 for (int res : grantResults) {
@@ -296,7 +313,7 @@ public class PhotoDetailActivity extends AppCompatActivity {
             //user granted all permissions we can perform our task.
             saveImage(bitmap);
         } else {
-
+            Toast.makeText(this, "Нет разрешений на запись на диск. Настройки - Приложения - Gallerin", Toast.LENGTH_SHORT).show();
         }
     }
 }

@@ -1,7 +1,5 @@
 package com.airatikuzzz.gallerin;
 
-import android.net.Uri;
-
 import com.google.gson.annotations.SerializedName;
 
 /**

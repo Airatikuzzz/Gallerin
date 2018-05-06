@@ -1,23 +1,18 @@
 package com.airatikuzzz.gallerin.fragments;
 
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -25,13 +20,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.airatikuzzz.gallerin.EndlessRecyclerOnScrollListener;
 import com.airatikuzzz.gallerin.GalleryItem;
 import com.airatikuzzz.gallerin.activities.PhotoDetailActivity;
 import com.airatikuzzz.gallerin.R;
+import com.airatikuzzz.gallerin.activities.UnsplashClient;
 import com.bumptech.glide.Glide;
 import com.kc.unsplash.Unsplash;
 import com.kc.unsplash.models.Photo;
@@ -46,11 +41,10 @@ import java.util.List;
 
 public class SearchFragment extends Fragment {
     private static final String QUERY_LAST = "last_query_gallerin";
+    private static final int SPAN_COUNT_SINGLE = 1;
     private String mQuery;
 
     private static final int DEFAULT_PAGE_NUMBER = 1;
-    private static final String RECYCLER_STATE = "receycler_state_gallerin";
-    private static final String TAG = "SearchFragment";
 
     private boolean isInstalledScrollManager = false;
     private boolean isSearching = false;
@@ -60,7 +54,6 @@ public class SearchFragment extends Fragment {
     private GridLayoutManager mGridLayoutManager;
 
     private EndlessRecyclerOnScrollListener scrollListener;
-    private Parcelable recyclerViewState;
     private SearchAdapter mAdapter;
     private List<GalleryItem> mItems = new ArrayList<>();
     private Unsplash unsplash;
@@ -78,20 +71,16 @@ public class SearchFragment extends Fragment {
         setRetainInstance(true);
         setHasOptionsMenu(true);
 
-        if(savedInstanceState!=null) {   //Возвращает TRUE при смене ориентации
-            recyclerViewState = savedInstanceState.getParcelable(RECYCLER_STATE);
-            mQuery = savedInstanceState.getString(QUERY_LAST);
-        }
-
-        unsplash = new Unsplash("ebe8195594bd221b1c86bb55d0224f1c439b41d0aa4d3736ba7bda6e57dcfde5");
+        unsplash = UnsplashClient.getCurrentUnsplash();
     }
+
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
         inflater.inflate(R.menu.search_fragment_menu, menu);
 
-        final MenuItem searchItem = (MenuItem) menu.findItem(R.id.menu_search_item);
+        final MenuItem searchItem = menu.findItem(R.id.menu_search_item);
         searchView = (SearchView) searchItem.getActionView();
 
         searchView.setIconified(false);
@@ -103,57 +92,58 @@ public class SearchFragment extends Fragment {
                     isSearching = true;
                     mItems.clear();
                     EndlessRecyclerOnScrollListener.setCurrent_page(1);
-                    if (scrollListener != null) {
-                        scrollListener.setPreviousTotal();
-                    }
-                    mGridLayoutManager = new GridLayoutManager(getActivity(), 1);
-                    mRecyclerView.setLayoutManager(mGridLayoutManager);
+                    mRecyclerView.removeOnScrollListener(scrollListener);
+                    setupLayoutManager(SPAN_COUNT_SINGLE);
                     mRecyclerView.setAdapter(new LoadingAdapter());
                     mQuery = query;
-                    loadData(DEFAULT_PAGE_NUMBER, mQuery);
-                    searchView.setIconified(false);
-                    mRecyclerView.removeOnScrollListener(scrollListener);
+                    loadData(DEFAULT_PAGE_NUMBER);
                     isInstalledScrollManager = false;
-                    mToolbar.setTitle(mQuery);
-                    searchView.setIconified(true);
-                    searchView.onActionViewCollapsed();
+                    collapseSearchView();
                 }
                 return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                Log.d(TAG, " text changed "+newText);
                 return false;
             }
         });
     }
 
+    private void collapseSearchView(){
+        mToolbar.setTitle(mQuery);
+        searchView.setIconified(true);
+        searchView.onActionViewCollapsed();
+    }
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
+    public void onDestroyView() {
+        super.onDestroyView();
         mRecyclerView.removeOnScrollListener(scrollListener);
     }
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        
         View v = inflater.inflate(R.layout.fragment_search, container, false);
         mRecyclerView = v.findViewById(R.id.fragment_search_recycler_view);
-        setupLayoutManager();
-
-        if(mQuery!= null) {
-            mItems.clear();
-            loadData(DEFAULT_PAGE_NUMBER, mQuery);
-        }
+        mToolbar = getActivity().findViewById(R.id.toolbar_search);
 
         EndlessRecyclerOnScrollListener.setCurrent_page(1);
-
-        mToolbar = getActivity().findViewById(R.id.toolbar_search);
+        isInstalledScrollManager = false;
+        
+        if(savedInstanceState!=null){
+            mQuery = savedInstanceState.getString(QUERY_LAST);
+            collapseSearchView();
+            setupAdapter();
+            setupLayoutManager(getSpanCount());
+        }
+        else setupLayoutManager(SPAN_COUNT_SINGLE);
 
         return v;
     }
+
     //Определение необходимого количества столбцов для gridlayout
     private int getSpanCount(){
         float densityDpi = getResources().getDisplayMetrics().densityDpi;
@@ -164,26 +154,21 @@ public class SearchFragment extends Fragment {
 
     private void onDataLoaded(){
         isSearching = false;
-        if(mGridLayoutManager.getSpanCount()==1){       //Данные загружены, меняем адаптер
-            mGridLayoutManager = new GridLayoutManager(getActivity(), getSpanCount());
-            mRecyclerView.setLayoutManager(mGridLayoutManager);
+        if(mGridLayoutManager.getSpanCount()==SPAN_COUNT_SINGLE){       //Данные загружены, меняем manager
+            setupLayoutManager(getSpanCount());
         }
         setupAdapter();
         setupScrollManager();
     }
 
     //Установка правильного менеджера:
-    //при изначальной загрузке нужен spancount=1, потому что ставим LoaderFragment c прогрессбаром
-
-    private void setupLayoutManager(){
-        if(mAdapter==null) {                //при смене ориентации условие игнорируется
-            mGridLayoutManager = new GridLayoutManager(getActivity(), 1);
-            mRecyclerView.setLayoutManager(mGridLayoutManager);
-            return;
-        }
-        mGridLayoutManager = new GridLayoutManager(getActivity(), getSpanCount());
+    //SPAN_COUNT_SINGLE  -  ставится тогда, когда на экране висит прогрессбар
+    //В остальных случаях, менеджер ставится с вычисляемым SPANCOUNT
+    private void setupLayoutManager(int spanCount){
+        mGridLayoutManager = new GridLayoutManager(getActivity(), spanCount);
         mRecyclerView.setLayoutManager(mGridLayoutManager);
     }
+    
     private void setupScrollManager(){
         if(isInstalledScrollManager){        //Не стоит вешать несколько слушателей на recyclerview
             return;
@@ -199,20 +184,20 @@ public class SearchFragment extends Fragment {
     }
 
     private void setupAdapter() {
-        if(mAdapter==null){                                 //Загрузка данных произошла
+        if (mAdapter == null) {                                 //Загрузка данных произошла
             mAdapter = new SearchAdapter(mItems);     //Передача данных адаптеру
             mRecyclerView.setAdapter(mAdapter);             //Установка адаптера
             return;
         }
         mAdapter.setGalleryItems(mItems);                   //При скролле передаем новые данные адаптеру
-        if(mRecyclerView.getAdapter()==null){               //Возвращает TRUE при смене ориентации
+        if (mRecyclerView.getAdapter() == null) {               //Возвращает TRUE при смене ориентации
             mRecyclerView.setAdapter(mAdapter);
-            mRecyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
             setupScrollManager();
             return;
         }
-        if(mRecyclerView.getAdapter() instanceof LoadingAdapter){
+        if (mRecyclerView.getAdapter() instanceof LoadingAdapter) {
             mRecyclerView.setAdapter(mAdapter);
+            return;
         }
         mAdapter.notifyDataSetChanged();
     }
@@ -222,16 +207,13 @@ public class SearchFragment extends Fragment {
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putParcelable(RECYCLER_STATE, mRecyclerView.getLayoutManager().onSaveInstanceState());
         outState.putString(QUERY_LAST, mQuery);
     }
 
     private void loadData(int page){
         searchPhotos(page, mQuery);
     }
-    private void loadData(int page, String query){
-        searchPhotos(page, mQuery);
-    }
+
 
 
     private void searchPhotos(int page, String query){
@@ -263,14 +245,15 @@ public class SearchFragment extends Fragment {
         }
         return mItems;
     }
+
     private class SearchHolder extends RecyclerView.ViewHolder {
 
-        private ImageView mImageView;
+        private final ImageView mImageView;
         private GalleryItem item;
 
         public SearchHolder(View itemView) {
             super(itemView);
-            mImageView = (ImageView) itemView.findViewById(R.id.fragment_photo_gallery_image_view);
+            mImageView = itemView.findViewById(R.id.fragment_photo_gallery_image_view);
         }
 
         public void bindGalleryItem(GalleryItem galleryItem){
@@ -303,7 +286,7 @@ public class SearchFragment extends Fragment {
             holder.mImageView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Intent i = PhotoDetailActivity.newIntent(getActivity(), Uri.parse(holder.item.getId()));
+                    Intent i = PhotoDetailActivity.newIntent(getActivity(), holder.item);
                     startActivity(i);
                 }
             });

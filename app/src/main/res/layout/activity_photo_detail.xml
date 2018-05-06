@@ -4,19 +4,22 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="@color/colorDarkGrey">
+    android:background="@color/black">
 <android.support.design.widget.AppBarLayout
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+    android:id="@+id/app_bar_lay"
+    android:layout_height="?attr/actionBarSize"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:background="@android:color/transparent"
+    >
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar_detail"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/colorPrimary"
         app:theme="@style/CustomActionBar"
-        app:titleTextColor="@color/white"/>
+        app:titleTextColor="@color/white"
+        android:background="@drawable/toolbar_back_transparent"/>
 
 </android.support.design.widget.AppBarLayout>
 <com.github.chrisbanes.photoview.PhotoView
@@ -24,7 +27,7 @@
     android:id="@+id/iv_photo"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:transitionName="@string/transition_test"
+    android:scaleType="fitCenter"
     />
     <ProgressBar
         android:layout_width="wrap_content"

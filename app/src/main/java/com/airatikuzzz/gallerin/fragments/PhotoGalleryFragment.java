@@ -1,26 +1,18 @@
 package com.airatikuzzz.gallerin.fragments;
 
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.util.LruCache;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -44,23 +36,21 @@ import java.util.List;
  * Created by maira on 12.07.2017.
  */
 
+
 public class PhotoGalleryFragment extends Fragment {
     private Order order;
 
     private static final int DEFAULT_PAGE_NUMBER = 1;
-    private static final String RECYCLER_STATE = "receycler_state_gallerin";
-    private static final String TAG = "PhotoGalleryFragment";
     private static final String ARG_ORDER = "PhotoGalleryFragment_arg_order";
 
     private boolean isRefreshing = false;
-    private boolean isInstalledScrollManager = false;
+    private boolean isInstalledScrollManager;
 
     private RecyclerView mRecyclerView;
     private SwipeRefreshLayout swipeLayout;
     private GridLayoutManager mGridLayoutManager;
 
     private EndlessRecyclerOnScrollListener scrollListener;
-    private Parcelable recyclerViewState;
     private PhotoGalleryAdapter mAdapter;
     private List<GalleryItem> mItems = new ArrayList<>();
 
@@ -80,28 +70,17 @@ public class PhotoGalleryFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
         setHasOptionsMenu(true);
+        Log.d("spl", "oncreate");
 
         order = Order.valueOf(getArguments().getString(ARG_ORDER).toUpperCase());
-
-        if(savedInstanceState!=null)        //Возвращает TRUE при смене ориентации
-            recyclerViewState = savedInstanceState.getParcelable(RECYCLER_STATE);
-
         unsplash = new Unsplash("ebe8195594bd221b1c86bb55d0224f1c439b41d0aa4d3736ba7bda6e57dcfde5");
 
         loadData(DEFAULT_PAGE_NUMBER);
     }
-
     @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        super.onCreateOptionsMenu(menu, inflater);
-        inflater.inflate(R.menu.fragment_photo_galleryy, menu);
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
+    public void onDestroyView() {
+        super.onDestroyView();
         mRecyclerView.removeOnScrollListener(scrollListener);
-        Log.d(TAG, "Background Thread destroyed ");
     }
 
     @Nullable
@@ -110,6 +89,7 @@ public class PhotoGalleryFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_photo_gallery, container, false);
         mRecyclerView = v.findViewById(R.id.fragment_photo_gallery_recycler_view);
 
+        isInstalledScrollManager = false;
         setupLayoutManager();
         setupAdapter();
         swipeLayout = v.findViewById(R.id.swipeContainer);
@@ -161,7 +141,8 @@ public class PhotoGalleryFragment extends Fragment {
         mRecyclerView.setLayoutManager(mGridLayoutManager);
     }
     private void setupScrollManager(){
-        if(isInstalledScrollManager){        //Не стоит вешать несколько слушателей на recyclerview
+        Log.d("spl", "is Installedscroo.l?" + isInstalledScrollManager);
+        if(isInstalledScrollManager){        //Не стоит вешать несколько слушателей скролла на recyclerview
             return;
         }
         isInstalledScrollManager = true;
@@ -190,7 +171,6 @@ public class PhotoGalleryFragment extends Fragment {
             mAdapter.setGalleryItems(mItems);                   //При скролле передаем новые данные адаптеру
             if(mRecyclerView.getAdapter()==null){               //Возвращает TRUE при смене ориентации
                 mRecyclerView.setAdapter(mAdapter);
-                mRecyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
                 setupScrollManager();
                 return;
             }
@@ -198,19 +178,7 @@ public class PhotoGalleryFragment extends Fragment {
         }
     }
 
-
-    //Сохранение состояния при смене ориентации
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putParcelable(RECYCLER_STATE, mRecyclerView.getLayoutManager().onSaveInstanceState());
-    }
-
     private void loadData(int page){
-        loadListPhotos(page);
-    }
-
-    private void loadListPhotos(int page){
         unsplash.getPhotos(page, 16, order, new Unsplash.OnPhotosLoadedListener() {
             @Override
             public void onComplete(List<Photo> photos) {
@@ -255,14 +223,16 @@ public class PhotoGalleryFragment extends Fragment {
         }
         return mItems;
     }
+
+
     private class PhotoGalleryHolder extends RecyclerView.ViewHolder {
 
-        private ImageView mImageView;
+        private final ImageView mImageView;
         private GalleryItem item;
 
         public PhotoGalleryHolder(View itemView) {
             super(itemView);
-            mImageView = (ImageView) itemView.findViewById(R.id.fragment_photo_gallery_image_view);
+            mImageView = itemView.findViewById(R.id.fragment_photo_gallery_image_view);
 
         }
         public void bindGalleryItem(GalleryItem galleryItem){
@@ -296,7 +266,7 @@ public class PhotoGalleryFragment extends Fragment {
             holder.mImageView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Intent i = PhotoDetailActivity.newIntent(getActivity(), Uri.parse(holder.item.getId()));
+                    Intent i = PhotoDetailActivity.newIntent(getActivity(), holder.item);
                     startActivity(i);
                 }
             });
@@ -323,7 +293,6 @@ public class PhotoGalleryFragment extends Fragment {
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             LayoutInflater layoutInflater = LayoutInflater.from(getActivity());
             View view = layoutInflater.inflate(R.layout.progress_bar, parent, false);
-            ProgressBar progressBar = view.findViewById(R.id.load_progress_bar);
             return new RecyclerView.ViewHolder(view) {};
         }
 
